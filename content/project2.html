@@ -1,0 +1,336 @@
+---
+title: "Project 2: Modeling, Testing, and Classification"
+author: "Samantha Rabinowitz, sar4357"
+date: "5/1/2020"
+output: pdf_document
+---
+
+
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>The following report demonstrates the use of a variety of techniques to perform tests and make predictions about as well as model the relationships between variables included in the <em>WalkTheDogs</em> dataset included in the <strong>Stat2Data</strong> package. The package includes a variety of datasets featured in the textbook <em>STAT2: Modeling with Regression and ANOVA: Modelling with Regression and ANOVA</em> (package written by Robin Lock). The dataset contains daily information collected by one of the authors of the textbook from a pedometer, as well as description of the weather conditions, and whether or not he walked his dogs. The dataset contains two variables for the author’s step count: one of them is the total number of steps from that day and the other is the same value divided by 1,000. Additionally, variables are included for the number of miles walked on that day and the number of calories burned. The variable indicating what day of the week it was when the data was collected is described using a one-letter code (M=Monday, T=Tuesday, W=Wednesday, R=Thursday, F=Friday, S=Saturday, U=Sunday). The weather was described one of three ways: shine, rain, or cold. And finally, if the author walked his dogs, <em>1</em> was recorded for the “Walk” variable. If the author did not walk his dogs, <em>0</em> was recorded. The full dataset contains 223 observations. The first 6 rows of the dataset are shown below.</p>
+<pre class="r"><code>library(Stat2Data)
+data(&quot;WalkTheDogs&quot;)
+dog &lt;- WalkTheDogs
+head(dog)</code></pre>
+<pre><code>##   StepCount Kcal Miles Weather Day Walk Steps
+## 1      2615    8   1.4   shine   F    0 2.615
+## 2      3323   12   1.8   shine   S    0 3.323
+## 3      2721   13   1.4   shine   U    0 2.721
+## 4      2454   12   1.3   shine   M    0 2.454
+## 5      5528  152   3.1    cold   T    1 5.528
+## 6      3257   17   1.8   shine   W    0 3.257</code></pre>
+</div>
+<div id="manova-anova" class="section level2">
+<h2>MANOVA + ANOVA</h2>
+<pre class="r"><code>man&lt;-manova(cbind(StepCount,Kcal)~Weather, data=dog)
+summary(man)</code></pre>
+<pre><code>##            Df   Pillai approx F num Df den Df    Pr(&gt;F)    
+## Weather     2 0.098891   5.7219      4    440 0.0001697 ***
+## Residuals 220                                              
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
+<pre class="r"><code>summary.aov(man)</code></pre>
+<pre><code>##  Response StepCount :
+##              Df     Sum Sq  Mean Sq F value   Pr(&gt;F)   
+## Weather       2   84434667 42217333   5.271 0.005808 **
+## Residuals   220 1762075520  8009434                    
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+##  Response Kcal :
+##              Df  Sum Sq Mean Sq F value  Pr(&gt;F)  
+## Weather       2   85913   42957   3.042 0.04975 *
+## Residuals   220 3106623   14121                  
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
+<pre class="r"><code>pairwise.t.test(dog$StepCount,dog$Weather,p.adj=&quot;none&quot;)</code></pre>
+<pre><code>## 
+##  Pairwise comparisons using t tests with pooled SD 
+## 
+## data:  dog$StepCount and dog$Weather 
+## 
+##       cold   rain  
+## rain  0.0047 -     
+## shine 0.0077 0.3354
+## 
+## P value adjustment method: none</code></pre>
+<pre class="r"><code>pairwise.t.test(dog$Kcal,dog$Weather,p.adj=&quot;none&quot;)</code></pre>
+<pre><code>## 
+##  Pairwise comparisons using t tests with pooled SD 
+## 
+## data:  dog$Kcal and dog$Weather 
+## 
+##       cold  rain 
+## rain  0.014 -    
+## shine 0.287 0.070
+## 
+## P value adjustment method: none</code></pre>
+<pre class="r"><code>1-(.95^9) #Probability of at least 1 type 1 error</code></pre>
+<pre><code>## [1] 0.3697506</code></pre>
+<pre class="r"><code>.05/9 #alpha after adjusting for multiple comparisons (bonferroni correction)</code></pre>
+<pre><code>## [1] 0.005555556</code></pre>
+<pre class="r"><code>ggplot(dog, aes(x = StepCount, y = Kcal)) + 
+  geom_point() + geom_density_2d() + facet_wrap(~Weather)</code></pre>
+<p><img src="/project2_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
+<pre class="r"><code>covmats&lt;-dog%&gt;%group_by(Weather)%&gt;%do(covs=cov(.[2:3]))
+for(i in 1:3){print(as.character(covmats$Weather[i])); print(covmats$covs[i])}</code></pre>
+<pre><code>## [1] &quot;cold&quot;
+## [[1]]
+##             Kcal      Miles
+## Kcal  13731.5537 191.975320
+## Miles   191.9753   2.928099
+## 
+## [1] &quot;rain&quot;
+## [[1]]
+##             Kcal      Miles
+## Kcal  14860.4790 187.112605
+## Miles   187.1126   2.637261
+## 
+## [1] &quot;shine&quot;
+## [[1]]
+##             Kcal     Miles
+## Kcal  14132.3847 158.57483
+## Miles   158.5748   2.37253</code></pre>
+<p>In the code above, 9 total tests were performed (1 MANOVA, 2 ANOVAs, and 6 t-tests). The probability of making at least 1 Type-1 error was calculated to be 0.3698 and the alpha after adjusting for multiple comparisons using the Bonferroni correction was found to be 0.0056. Because of these corrections, in the post-hoc tests performed, the only significant result found was that ‘cold’ and ‘rain’ weather conditions differ based on daily step count. Examination of multivariate plots generated for the dependent variables of interest reveals some violation of multivariate normality. Generation and examination of within group covariance matrices also demonstrates some deviation from this assumption.</p>
+</div>
+<div id="randomization-test" class="section level2">
+<h2>Randomization Test</h2>
+<pre class="r"><code>dog %&gt;% filter(Day==&quot;S&quot;) %&gt;% summarize(mean = mean(Steps))</code></pre>
+<pre><code>##       mean
+## 1 5.089286</code></pre>
+<pre class="r"><code>dog %&gt;% filter(Day==&quot;U&quot;) %&gt;% summarize(mean = mean(Steps))</code></pre>
+<pre><code>##       mean
+## 1 3.957107</code></pre>
+<pre class="r"><code>(obs_diff &lt;- 5.089286   - 3.957107)</code></pre>
+<pre><code>## [1] 1.132179</code></pre>
+<pre class="r"><code>set.seed(42)
+diffs&lt;-vector()
+for(i in 1:5000){
+  x &lt;- dog %&gt;% mutate(steps = sample(dog$Steps))
+  diffs[i] &lt;- x %&gt;% summarize(mean(steps[Day==&quot;S&quot;]) - mean(steps[Day==&quot;U&quot;])) %&gt;% pull
+}
+
+(p &lt;- mean(diffs&gt;obs_diff | diffs&lt; -1*obs_diff))</code></pre>
+<pre><code>## [1] 0.1204</code></pre>
+<pre class="r"><code>hist(diffs); abline(v = obs_diff, col=&quot;red&quot;)</code></pre>
+<p><img src="/project2_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<p>Null hypothesis: Mean number of steps taken is the same on Saturdays and Sundays.<br />
+Alternative hypothesis: Mean number of steps taken is different on Saturdays and Sundays.<br />
+By comparing the observed mean difference in step count on Saturday versus Sunday to the value generated in the randomization test, the two-tailed p-value generated is 0.125. If alpha is set 0.05, then it can be understood from this p-value that there is no significant difference between the number of steps taken by the author on Saturdays and Sundays. The histogram above shows a red line representing the observed difference in step count between Saturdays and Sundays.</p>
+</div>
+<div id="linear-regression-model" class="section level2">
+<h2>Linear Regression Model</h2>
+<pre class="r"><code>dog$Miles_c&lt;-dog$Miles-mean(dog$Miles)
+
+fit &lt;- lm(Kcal~Weather*Miles_c, data = dog)
+summary(fit)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = Kcal ~ Weather * Miles_c, data = dog)
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -188.973  -24.977    2.426   26.563  199.094 
+## 
+## Coefficients:
+##                      Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)           149.369      6.314  23.656  &lt; 2e-16 ***
+## Weatherrain            -4.795     10.865  -0.441  0.65945    
+## Weathershine          -24.309      7.832  -3.104  0.00216 ** 
+## Miles_c                65.563      3.564  18.398  &lt; 2e-16 ***
+## Weatherrain:Miles_c     5.386      6.395   0.842  0.40057    
+## Weathershine:Miles_c    1.275      4.662   0.273  0.78477    
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 50.29 on 217 degrees of freedom
+## Multiple R-squared:  0.8281, Adjusted R-squared:  0.8242 
+## F-statistic: 209.1 on 5 and 217 DF,  p-value: &lt; 2.2e-16</code></pre>
+<p>The predicted Kcal value when the weather is categorized as “cold” and the author walked an average number of miles is <strong>149.369 Calories</strong>. While controlling for miles walked, the Calories burned by the author is on average <strong>4.795 Calories lower</strong> on “rain” days as compared to “cold” days. While controlling for miles walked , the Calories burned by the author is on average <strong>24.309 Calories lower</strong> on days categorized as “shine” for the weather as compared to “cold” days. Controlling for weather condition, for every one unit increase in Miles, the author burns an <strong>additional 65.563 Calories</strong> on average. When the weather has been categorized as “rain”, for every one unit increase in Miles the author burns an <strong>additional 5.386 Calories</strong> on average. When the weather has been categorized as “shine”, for every one unit increase in Miles the author burns an <strong>additional 1.275 Calories</strong> on average.</p>
+<pre class="r"><code>ggplot(dog, aes(x=Miles_c, y=Kcal, color=Weather)) + geom_point()</code></pre>
+<p><img src="/project2_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<pre class="r"><code>bptest(fit) #test for homoskedasticity - reject Ho</code></pre>
+<pre><code>## 
+##  studentized Breusch-Pagan test
+## 
+## data:  fit
+## BP = 56.95, df = 5, p-value = 5.179e-11</code></pre>
+<pre class="r"><code>shapiro.test(fit$residuals) #test for normality of residuals - reject Ho</code></pre>
+<pre><code>## 
+##  Shapiro-Wilk normality test
+## 
+## data:  fit$residuals
+## W = 0.95682, p-value = 2.958e-06</code></pre>
+<pre class="r"><code>coeftest(fit, vcov=vcovHC(fit))</code></pre>
+<pre><code>## 
+## t test of coefficients:
+## 
+##                      Estimate Std. Error t value  Pr(&gt;|t|)    
+## (Intercept)          149.3689     4.1800 35.7344 &lt; 2.2e-16 ***
+## Weatherrain           -4.7946     7.7080 -0.6220 0.5345735    
+## Weathershine         -24.3093     6.5969 -3.6849 0.0002889 ***
+## Miles_c               65.5631     1.9223 34.1059 &lt; 2.2e-16 ***
+## Weatherrain:Miles_c    5.3865     4.5325  1.1884 0.2359743    
+## Weathershine:Miles_c   1.2747     7.3215  0.1741 0.8619415    
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
+<p>Checking assumptions for homoskedasticity and normality of the residuals both produce p-values that indicate to reject the null hypothesis, indicating neither assumption has been met. Recomputing the regression using bootstrapped standard errors and robust standard errors aids in correcting for these failed assumptions. Overall, as demonstrated by the plot of the regression, the data varies some from the linearity assumption, however not extremely so.<br />
+After performing the regression using robust standard errors, the same three coefficients remain significant (Weathercold - Intercept, Weathershine, and Miles_c). However, the signficance of Weathershine has been increased following the use of robust standard errors.<br />
+As indicated by the adjusted R-squared found in running the model, the proportion of the variation in the outcome that can be explained by the model is 0.8242.</p>
+</div>
+<div id="linear-regression-model-bootstrapped-standard-errors" class="section level2">
+<h2>Linear Regression Model + Bootstrapped Standard Errors</h2>
+<pre class="r"><code>set.seed(42)
+samp_dist&lt;-replicate(5000, {
+  boot_dog &lt;- sample_frac(dog, replace=T)
+  fit &lt;- lm(Kcal~Weather*Miles_c, data=boot_dog)
+  coef(fit)
+  })
+
+samp_dist %&gt;% 
+  t %&gt;% 
+  as.data.frame %&gt;% 
+  summarize_all(sd)</code></pre>
+<pre><code>##   (Intercept) Weatherrain Weathershine  Miles_c Weatherrain:Miles_c
+## 1     4.21541    7.792361     6.628671 1.894506            4.582724
+##   Weathershine:Miles_c
+## 1             6.299515</code></pre>
+<p>Ultimately, the standard errors reported above from bootstrapping compare quite well those those reported from the use of robust standard errors. Given that significance did not change from the original model after using robust standard errors, it can be assumed that the significance should not change for the regression performed above using bootstrapping.</p>
+</div>
+<div id="logistic-regression" class="section level2">
+<h2>Logistic Regression</h2>
+<pre class="r"><code>fit &lt;- glm(Walk ~ StepCount+Kcal+Miles+Weather, data = dog, family = &quot;binomial&quot;)
+summary(fit)</code></pre>
+<pre><code>## 
+## Call:
+## glm(formula = Walk ~ StepCount + Kcal + Miles + Weather, family = &quot;binomial&quot;, 
+##     data = dog)
+## 
+## Deviance Residuals: 
+##     Min       1Q   Median       3Q      Max  
+## -1.9128  -0.7903  -0.5628   0.9672   2.4139  
+## 
+## Coefficients:
+##               Estimate Std. Error z value Pr(&gt;|z|)    
+## (Intercept)  -0.112641   0.625920  -0.180    0.857    
+## StepCount    -0.003925   0.002510  -1.564    0.118    
+## Kcal          0.016734   0.004032   4.150 3.33e-05 ***
+## Miles         6.108961   4.398246   1.389    0.165    
+## Weatherrain   0.530996   0.467837   1.135    0.256    
+## Weathershine  0.062239   0.374041   0.166    0.868    
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 274.28  on 222  degrees of freedom
+## Residual deviance: 234.82  on 217  degrees of freedom
+## AIC: 246.82
+## 
+## Number of Fisher Scoring iterations: 4</code></pre>
+<pre class="r"><code>exp(coef(fit))</code></pre>
+<pre><code>##  (Intercept)    StepCount         Kcal        Miles  Weatherrain Weathershine 
+##    0.8934710    0.9960827    1.0168745  449.8708376    1.7006248    1.0642171</code></pre>
+<p>Controlling for step count, Calories burned, and miles walked, the odds of the author walking the dogs on a “cold” day is 0.893. Controlling for Calories burned, miles walked, and weather condition, for every additional increase in step count, the odds of walking the dogs increase by a factor of 0.996. Controlling for step count, miles walked, and weather condition, for every additional increase in Kcal, the odds of walking the dogs increase by a factor of 1.017. Controlling for step count, Calories burned, and weather condition, for every additional increase in miles walked, the odds of walking the dogs increase by a factor of 449.870 (despite the big difference in this coefficient as compared to others, it still makes sense when you consider what an increase of 1 means when looking at miles walked vs steps walked). Controlling for step count, Calories burned, and miles walked, the odds of walking the dogs on a “rain” day is 1.701 times the odds on a “cold” day. Controlling for step count, Calories burned, and miles walked, the odds of walking the dogs on a “shine” day is 1.064 times the odds on a “cold” day.</p>
+<pre class="r"><code>prob&lt;-predict(fit, type=&quot;response&quot;)
+table(predicted=prob&gt;.5,Walk=dog$Walk)%&gt;%addmargins()</code></pre>
+<pre><code>##          Walk
+## predicted   0   1 Sum
+##     FALSE 137  45 182
+##     TRUE   18  23  41
+##     Sum   155  68 223</code></pre>
+<pre class="r"><code>class_diag(prob,dog$Walk)</code></pre>
+<pre><code>##         acc      sens     spec       ppv      auc
+## 1 0.7174888 0.3382353 0.883871 0.5609756 0.763852</code></pre>
+<p>After running the classification diagnostics for the model, an AUC value of 0.764 was generated, a value that is considered to be <em>fair</em> in terms of how well the model functions.</p>
+<pre class="r"><code>dog$logit&lt;-predict(fit)
+dog$Walk_level&lt;-factor(dog$Walk,levels=c(&quot;0&quot;,&quot;1&quot;))
+ggplot(dog,aes(logit, fill=Walk_level))+geom_density(alpha=.2)+
+  geom_vline(xintercept=0,lty=2)+
+  scale_fill_manual(name=&quot;Walk&quot;,
+                       labels=c(&quot;No Walk&quot;,&quot;Walk&quot;),
+                       values=c(&quot;red&quot;,&quot;blue&quot;))</code></pre>
+<p><img src="/project2_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+<pre class="r"><code>ROC&lt;-ggplot(dog)+geom_roc(aes(d=Walk,m=prob), n.cuts=0)
+ROC</code></pre>
+<p><img src="/project2_files/figure-html/unnamed-chunk-9-2.png" width="672" /></p>
+<pre class="r"><code>calc_auc(ROC)</code></pre>
+<pre><code>##   PANEL group      AUC
+## 1     1    -1 0.763852</code></pre>
+<p>The above method of creating an ROC curve and using the curve to determine the AUC value generates the same value found previously, AUC = 0.764. Again, this value indicates that the model is <em>fair</em> in terms of describing how well the model can be used to predict whether or not the author will walk his dogs on a particular day.</p>
+<pre class="r"><code>set.seed(42)
+k=10
+
+dog1&lt;-dog[sample(nrow(dog)),]
+folds&lt;-cut(seq(1:nrow(dog)),breaks=k,labels=F)
+
+diags&lt;-NULL
+for(i in 1:k){
+train&lt;-dog1[folds!=i,]
+test&lt;-dog1[folds==i,]
+
+truth&lt;-test$Walk
+
+fit&lt;- glm(Walk ~ StepCount+Kcal+Miles+Weather, data=train, family=&quot;binomial&quot;)
+probs&lt;- predict(fit, newdata=test, type=&quot;response&quot;)
+
+diags&lt;-rbind(diags,class_diag(probs,truth))
+}
+
+summarize_all(diags,mean)</code></pre>
+<pre><code>##         acc      sens      spec       ppv       auc
+## 1 0.7037549 0.3694481 0.8742647 0.5344444 0.7559341</code></pre>
+<p>After performing a 10-fold cross validation, the AUC of the model is found to be 0.754. Ultimately, this value did not change much from the AUC generated from the data the model was trained to. However there was a small decrease in the AUC after using the model on new data.</p>
+</div>
+<div id="lasso-regression" class="section level2">
+<h2>LASSO Regression</h2>
+<pre class="r"><code>dog$logit &lt;- NULL
+dog$Walk_level &lt;- NULL
+dog$Miles_c &lt;- NULL
+y&lt;-as.matrix(dog$Walk)
+x&lt;-model.matrix(Walk~., data=dog)[,-1]
+
+cv&lt;-cv.glmnet(x,y,family=&quot;binomial&quot;)
+lasso&lt;-glmnet(x,y,family=&quot;binomial&quot;,lambda=cv$lambda.1se)
+coef(lasso)</code></pre>
+<pre><code>## 13 x 1 sparse Matrix of class &quot;dgCMatrix&quot;
+##                        s0
+## (Intercept)  -1.028904951
+## StepCount     .          
+## Kcal          0.001465009
+## Miles         .          
+## Weatherrain   .          
+## Weathershine  .          
+## DayM          .          
+## DayR          .          
+## DayS          .          
+## DayT          .          
+## DayU          .          
+## DayW          .          
+## Steps         .</code></pre>
+<pre class="r"><code>set.seed(42)
+k=10
+
+dog1&lt;-dog[sample(nrow(dog)),]
+folds&lt;-cut(seq(1:nrow(dog)),breaks=k,labels=F)
+
+diags&lt;-NULL
+for(i in 1:k){
+train&lt;-dog1[folds!=i,]
+test&lt;-dog1[folds==i,]
+
+truth&lt;-test$Walk
+
+fit&lt;- glm(Walk ~ Kcal, data=train, family=&quot;binomial&quot;)
+probs&lt;- predict(fit, newdata=test, type=&quot;response&quot;)
+
+diags&lt;-rbind(diags,class_diag(probs,truth))
+}
+
+summarize_all(diags,mean)</code></pre>
+<pre><code>##         acc      sens      spec ppv       auc
+## 1 0.6770751 0.2223052 0.8890354 NaN 0.7426041</code></pre>
+<p>The above LASSO regression determines that the most (and only, in this case) important predictor of whether or not the author walked the dogs is the Kcal variable. After performing a 10-fold cross validation using only this single variable, the AUC generated is 0.761. This value is greater than the AUC generated from using additional variables in the above question. While the AUC for both models fall into the range of values considered to be <em>fair</em>, the model containing only the variable determined by LASSO to be most important in predicting whether or not the author walked the dogs would be considered better.</p>
+</div>

@@ -1,0 +1,243 @@
+---
+title: "Project 2: Modeling, Testing, and Classification"
+author: "Samantha Rabinowitz, sar4357"
+date: "5/1/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(car)
+library(plotROC)
+library(glmnet)
+library(sandwich)
+library(lmtest)
+
+class_diag<-function(probs,truth){
+  
+  tab<-table(factor(probs>.5,levels=c("FALSE","TRUE")),truth)
+  acc=sum(diag(tab))/sum(tab)
+  sens=tab[2,2]/colSums(tab)[2]
+  spec=tab[1,1]/colSums(tab)[1]
+  ppv=tab[2,2]/rowSums(tab)[2]
+
+  if(is.numeric(truth)==FALSE & is.logical(truth)==FALSE) truth<-as.numeric(truth)-1
+  
+  #CALCULATE EXACT AUC
+  ord<-order(probs, decreasing=TRUE)
+  probs <- probs[ord]; truth <- truth[ord]
+  
+  TPR=cumsum(truth)/max(1,sum(truth)) 
+  FPR=cumsum(!truth)/max(1,sum(!truth))
+  
+  dup<-c(probs[-1]>=probs[-length(probs)], FALSE)
+  TPR<-c(0,TPR[!dup],1); FPR<-c(0,FPR[!dup],1)
+  
+  n <- length(TPR)
+  auc<- sum( ((TPR[-1]+TPR[-n])/2) * (FPR[-1]-FPR[-n]) )
+
+  data.frame(acc,sens,spec,ppv,auc)
+}
+```
+
+## Introduction
+
+The following report demonstrates the use of a variety of techniques to perform tests and make predictions about as well as model the relationships between variables included in the *WalkTheDogs* dataset included in the **Stat2Data** package. The package includes a variety of datasets featured in the textbook *STAT2: Modeling with Regression and ANOVA: Modelling with Regression and ANOVA* (package written by Robin Lock). The dataset contains daily information collected by one of the authors of the textbook from a pedometer, as well as description of the weather conditions, and whether or not he walked his dogs. The dataset contains two variables for the author's step count: one of them is the total number of steps from that day and the other is the same value divided by 1,000. Additionally, variables are included for the number of miles walked on that day and the number of calories burned. The variable indicating what day of the week it was when the data was collected is described using a one-letter code (M=Monday, T=Tuesday, W=Wednesday, R=Thursday, F=Friday, S=Saturday, U=Sunday). The weather was described one of three ways: shine, rain, or cold. And finally, if the author walked his dogs, *1* was recorded for the "Walk" variable. If the author did not walk his dogs, *0* was recorded. The full dataset contains 223 observations. The first 6 rows of the dataset are shown below.
+
+```{R}
+library(Stat2Data)
+data("WalkTheDogs")
+dog <- WalkTheDogs
+head(dog)
+```
+
+## MANOVA + ANOVA
+
+```{R}
+man<-manova(cbind(StepCount,Kcal)~Weather, data=dog)
+summary(man)
+
+summary.aov(man)
+
+pairwise.t.test(dog$StepCount,dog$Weather,p.adj="none")
+
+pairwise.t.test(dog$Kcal,dog$Weather,p.adj="none")
+
+1-(.95^9) #Probability of at least 1 type 1 error
+
+.05/9 #alpha after adjusting for multiple comparisons (bonferroni correction)
+
+ggplot(dog, aes(x = StepCount, y = Kcal)) + 
+  geom_point() + geom_density_2d() + facet_wrap(~Weather)
+
+covmats<-dog%>%group_by(Weather)%>%do(covs=cov(.[2:3]))
+for(i in 1:3){print(as.character(covmats$Weather[i])); print(covmats$covs[i])}
+```
+
+In the code above, 9 total tests were performed (1 MANOVA, 2 ANOVAs, and 6 t-tests). The probability of making at least 1 Type-1 error was calculated to be 0.3698 and the alpha after adjusting for multiple comparisons using the Bonferroni correction was found to be 0.0056. Because of these corrections, in the post-hoc tests performed, the only significant result found was that 'cold' and 'rain' weather conditions differ based on daily step count. Examination of multivariate plots generated for the dependent variables of interest reveals some violation of multivariate normality. Generation and examination of within group covariance matrices also demonstrates some deviation from this assumption. 
+
+## Randomization Test
+
+```{R}
+dog %>% filter(Day=="S") %>% summarize(mean = mean(Steps))
+dog %>% filter(Day=="U") %>% summarize(mean = mean(Steps))
+
+(obs_diff <- 5.089286	- 3.957107)
+
+set.seed(42)
+diffs<-vector()
+for(i in 1:5000){
+  x <- dog %>% mutate(steps = sample(dog$Steps))
+  diffs[i] <- x %>% summarize(mean(steps[Day=="S"]) - mean(steps[Day=="U"])) %>% pull
+}
+
+(p <- mean(diffs>obs_diff | diffs< -1*obs_diff))
+
+hist(diffs); abline(v = obs_diff, col="red")
+```
+
+Null hypothesis: Mean number of steps taken is the same on Saturdays and Sundays.  
+Alternative hypothesis: Mean number of steps taken is different on Saturdays and Sundays.  
+By comparing the observed mean difference in step count on Saturday versus Sunday to the value generated in the randomization test, the two-tailed p-value generated is 0.125. If alpha is set 0.05, then it can be understood from this p-value that there is no significant difference between the number of steps taken by the author on Saturdays and Sundays. The histogram above shows a red line representing the observed difference in step count between Saturdays and Sundays.
+
+## Linear Regression Model
+
+```{R}
+dog$Miles_c<-dog$Miles-mean(dog$Miles)
+
+fit <- lm(Kcal~Weather*Miles_c, data = dog)
+summary(fit)
+```
+
+The predicted Kcal value when the weather is categorized as "cold" and the author walked an average number of miles is **149.369 Calories**. While controlling for miles walked, the Calories burned by the author is on average **4.795 Calories lower** on "rain" days as compared to "cold" days. While controlling for miles walked , the Calories burned by the author is on average **24.309 Calories lower** on days categorized as "shine" for the weather as compared to "cold" days. Controlling for weather condition, for every one unit increase in Miles, the author burns an **additional 65.563 Calories** on average. When the weather has been categorized as "rain", for every one unit increase in Miles the author burns an **additional 5.386 Calories** on average. When the weather has been categorized as "shine", for every one unit increase in Miles the author burns an **additional 1.275 Calories** on average. 
+
+```{R}
+ggplot(dog, aes(x=Miles_c, y=Kcal, color=Weather)) + geom_point()
+
+bptest(fit) #test for homoskedasticity - reject Ho
+
+shapiro.test(fit$residuals) #test for normality of residuals - reject Ho
+
+coeftest(fit, vcov=vcovHC(fit))
+```
+
+Checking assumptions for homoskedasticity and normality of the residuals both produce p-values that indicate to reject the null hypothesis, indicating neither assumption has been met. Recomputing the regression using bootstrapped standard errors and robust standard errors aids in correcting for these failed assumptions. Overall, as demonstrated by the plot of the regression, the data varies some from the linearity assumption, however not extremely so.  
+After performing the regression using robust standard errors, the same three coefficients remain significant (Weathercold - Intercept, Weathershine, and Miles_c). However, the signficance of Weathershine has been increased following the use of robust standard errors.  
+As indicated by the adjusted R-squared found in running the model, the proportion of the variation in the outcome that can be explained by the model is 0.8242.
+
+## Linear Regression Model + Bootstrapped Standard Errors
+
+```{R}
+set.seed(42)
+samp_dist<-replicate(5000, {
+  boot_dog <- sample_frac(dog, replace=T)
+  fit <- lm(Kcal~Weather*Miles_c, data=boot_dog)
+  coef(fit)
+  })
+
+samp_dist %>% 
+  t %>% 
+  as.data.frame %>% 
+  summarize_all(sd)
+```
+
+Ultimately, the standard errors reported above from bootstrapping compare quite well those those reported from the use of robust standard errors. Given that significance did not change from the original model after using robust standard errors, it can be assumed that the significance should not change for the regression performed above using bootstrapping.
+
+## Logistic Regression
+
+```{R}
+fit <- glm(Walk ~ StepCount+Kcal+Miles+Weather, data = dog, family = "binomial")
+summary(fit)
+exp(coef(fit))
+```
+
+Controlling for step count, Calories burned, and miles walked, the odds of the author walking the dogs on a "cold" day is 0.893. Controlling for Calories burned, miles walked, and weather condition, for every additional increase in step count, the odds of walking the dogs increase by a factor of 0.996. Controlling for step count, miles walked, and weather condition, for every additional increase in Kcal, the odds of walking the dogs increase by a factor of 1.017. Controlling for step count, Calories burned, and weather condition, for every additional increase in miles walked, the odds of walking the dogs increase by a factor of 449.870 (despite the big difference in this coefficient as compared to others, it still makes sense when you consider what an increase of 1 means when looking at miles walked vs steps walked). Controlling for step count, Calories burned, and miles walked, the odds of walking the dogs on a "rain" day is 1.701 times the odds on a "cold" day. Controlling for step count, Calories burned, and miles walked, the odds of walking the dogs on a "shine" day is 1.064 times the odds on a "cold" day.
+
+```{R}
+prob<-predict(fit, type="response")
+table(predicted=prob>.5,Walk=dog$Walk)%>%addmargins()
+
+class_diag(prob,dog$Walk)
+```
+
+After running the classification diagnostics for the model, an AUC value of 0.764 was generated, a value that is considered to be *fair* in terms of how well the model functions.
+
+```{R}
+dog$logit<-predict(fit)
+dog$Walk_level<-factor(dog$Walk,levels=c("0","1"))
+ggplot(dog,aes(logit, fill=Walk_level))+geom_density(alpha=.2)+
+  geom_vline(xintercept=0,lty=2)+
+  scale_fill_manual(name="Walk",
+                       labels=c("No Walk","Walk"),
+                       values=c("red","blue"))
+
+
+ROC<-ggplot(dog)+geom_roc(aes(d=Walk,m=prob), n.cuts=0)
+ROC
+calc_auc(ROC)
+```
+
+The above method of creating an ROC curve and using the curve to determine the AUC value generates the same value found previously, AUC = 0.764. Again, this value indicates that the model is *fair* in terms of describing how well the model can be used to predict whether or not the author will walk his dogs on a particular day.
+
+```{R}
+set.seed(42)
+k=10
+
+dog1<-dog[sample(nrow(dog)),]
+folds<-cut(seq(1:nrow(dog)),breaks=k,labels=F)
+
+diags<-NULL
+for(i in 1:k){
+train<-dog1[folds!=i,]
+test<-dog1[folds==i,]
+
+truth<-test$Walk
+
+fit<- glm(Walk ~ StepCount+Kcal+Miles+Weather, data=train, family="binomial")
+probs<- predict(fit, newdata=test, type="response")
+
+diags<-rbind(diags,class_diag(probs,truth))
+}
+
+summarize_all(diags,mean)
+```
+
+After performing a 10-fold cross validation, the AUC of the model is found to be 0.754. Ultimately, this value did not change much from the AUC generated from the data the model was trained to. However there was a small decrease in the AUC after using the model on new data. 
+
+## LASSO Regression
+
+```{R}
+dog$logit <- NULL
+dog$Walk_level <- NULL
+dog$Miles_c <- NULL
+y<-as.matrix(dog$Walk)
+x<-model.matrix(Walk~., data=dog)[,-1]
+
+cv<-cv.glmnet(x,y,family="binomial")
+lasso<-glmnet(x,y,family="binomial",lambda=cv$lambda.1se)
+coef(lasso)
+
+set.seed(42)
+k=10
+
+dog1<-dog[sample(nrow(dog)),]
+folds<-cut(seq(1:nrow(dog)),breaks=k,labels=F)
+
+diags<-NULL
+for(i in 1:k){
+train<-dog1[folds!=i,]
+test<-dog1[folds==i,]
+
+truth<-test$Walk
+
+fit<- glm(Walk ~ Kcal, data=train, family="binomial")
+probs<- predict(fit, newdata=test, type="response")
+
+diags<-rbind(diags,class_diag(probs,truth))
+}
+
+summarize_all(diags,mean)
+```
+
+The above LASSO regression determines that the most (and only, in this case) important predictor of whether or not the author walked the dogs is the Kcal variable. After performing a 10-fold cross validation using only this single variable, the AUC generated is 0.761. This value is greater than the AUC generated from using additional variables in the above question. While the AUC for both models fall into the range of values considered to be *fair*, the model containing only the variable determined by LASSO to be most important in predicting whether or not the author walked the dogs would be considered better.

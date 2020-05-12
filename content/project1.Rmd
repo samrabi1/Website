@@ -1,0 +1,171 @@
+---
+title: 'Project 1: Exploratory Data Analysis'
+author: "Samantha Rabinowitz, sar4357"
+date: "3/15/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE, fig.align = "center", warning = F, message = F,
+tidy=TRUE, tidy.opts=list(width.cutoff=60), R.options=list(max.print=100))
+```
+
+# Income and Poverty Rates and Teen Pregnancy in Texas Counties 
+
+## Introduction
+
+The following report demonstrates data wrangling and exploration for two datasets that describe rates of teenage pregnancy and income demographics and poverty rates across the 200+ counties in the state of Texas. Given the wide range of types of communities in Texas, it can be interesting to explore the differences in statistics such as these across the state. One dataset, obtained from https://www.countyhealthrankings.org/, contains the teen pregnancy rate for each county as determined by data from 2010-2016. The pregnancy rate is a measure of the number of births per 1,000 females from the ages of 15-19. The webpage includes additional datapoints such as pregnancy rates by race of the mother however, these data will not be included as these values were missing from a number of counties. The rate listed in this report is for all females in the indicated county. (As a side note - 13 out of the 254 counties in Texas did not report a teen pregnancy rate as the value was less than 10. This choice was made to protect the identity of these young women due to the small number.)  
+
+The second dataset included in this report was obtained from the Texas Association of Counties (https://imis.county.org/iMIS/CountyInformationProgram/QueriesCIP.aspx) and includes information regarding the income of the citizens of the indicated county as well as the percentage of the population in poverty and the percentage of individuals under 18 living in poverty. These data were collected from a number of federal and state agencies, including the United States Department of Agriculture, the Census Bureau, and the Texas Workforce Commission. Given that qualities of education in students can often vary due to their socioeconomic status, it is likely that the quality of sex education being provided in middle/high schools is also impacted by this demographic. This is probably exaggerated by the fact that Texas schools are already limited in the sex education information that is provided to their students since a majority of the schools follow "abstinence-only" messaging. By failing to provide well-rounded information regarding safe sexual practices and contraception options to young people, they are put at risk of finding themselves faced with unwanted teen pregnancies. Examination of the relationship between the pregnancy rates of counties and the percentage of their populations (especially the percentage of those citizens under 18) living in poverty as well as the other income information provided in these data may provide interesting statistical information.
+
+```{r}
+library(tidyverse)
+preg_rates <- read_csv("teen_pregnancy.csv")
+preg_rates %>% glimpse()
+income_demo <-read_csv("income_poverty_data.csv")
+income_demo %>% glimpse()
+```
+
+## Joining
+
+```{r}
+total_dat <- preg_rates %>% inner_join(income_demo)
+total_dat %>% glimpse()
+```
+
+No tidying was required prior to joining the two datasets (see **Wrangling** section for demonstration of the use of the functions used in tidying datasets). I chose to use the *inner_join* function to join the two datasets since the dataset containing tenn pregnancy rates had a more limited list of counties than the dataset containing income and poverty information. This action made sure that proper comparison and investigation of the relationships between teen pregnancy rates and income/poverty information would be allowed. Additionally, having only one variable in common, the function used the **County** variable to join the two datasets. 
+
+## Wrangling
+
+```{r}
+total_dat %>% filter(TeenBirthRate>60) %>% glimpse()
+total_dat %>% select(TeenBirthRate, PercentUnder18inPoverty) %>% glimpse()
+total_dat %>% arrange(TeenBirthRate) %>% glimpse()
+total_dat <- total_dat %>% 
+  mutate(birth_rate_level = case_when(TeenBirthRate<30 ~ "low",
+                                      30<=TeenBirthRate & TeenBirthRate<=70 ~ "med",
+                                      TeenBirthRate>70 ~ "high"),
+         population=TotalPersonalIncome/PerCapitaIncome)
+total_dat$birth_rate_level <- factor(total_dat$birth_rate_level,
+                                     levels=c("low","med","high"))
+total_dat %>% group_by(birth_rate_level) %>% count(birth_rate_level)
+total_dat %>% glimpse()
+```
+
+The code above demonstrates the use of the 6 core **dplyr** functions. First, the *filter* function was utilized to extract rows where the teen birth rate was higher than 60. Next, the *select* function was used to extract only the columns for teen birth rate and the percentage of citizens in a county under the age of 18 living in poverty. The relationship between these two variables specifically could provide a lot of important information about the effects of poverty on teen pregnancy. Following this, the *arrange* function orders the dataset from lowest to highest teen birth rate.  
+  
+Finally, the *mutate* function was utilized to add 3 additional variables. *birth_rate_level* was added to break up teen birth rate into 2 levels to further organize this data. "Low" was a birth rate of 0-29, "Med" was a birth rate of 30-70, and "High" was a birth rate of greater than 70. A *population* variable was added by dividing *TotalPersonalIncome* by *PerCapitaIncome*. After this, the *group_by* function was used along with the *count* function to generate the number of rows in each level.
+
+```{r}
+total_dat %>% select_if(is.numeric) %>% cor()
+
+total_dat %>% summarize_if(is.numeric, funs(mean, median, sd, IQR)) %>% 
+  pivot_longer(cols = contains("_"),names_to = "name1", values_to = "value") %>%
+  separate(name1, into=c("variable","stat")) %>% 
+  pivot_wider(names_from = "stat", values_from = "value")
+
+```
+
+The above code creates a correlation matrix that describes the relationships between each of the numeric variables. Of particular note are the correlation values between median household income and the two different percentages reported for citizens living in poverty.  
+  
+Additionally, a number of different summary statistics were generated for the numeric variables. In organizing this data, the *pivot_longer* and *pivot_wider* functions were utilized to tidy the data to allow for columns for each summary statistic type and the variable. *pivot_longer* was first used to create 2 columns - one with the name of the variable and its associated statistic name and one with the value for this statistic. *separate* was then utilized to create a column of variable names and statistics. *pivot_wider* was then used to make one column for each kind of summary statistic.
+
+## Visualizing
+
+The correlation heatmap below demonstrates the information from the correlation matrix created above in a more visual manner. As described by the legend on the right, darker values indicate a more negative correlation while the lightest blues demonstrate a more positive correlation. The most negative correlations show the relationships between median household income and the percentages of the population in poverty. This makes sense since as the median household income in a county increases, it is likely that the amount of people in these counties living below the poverty line would decrease. Another correlation to note is the 0.55 correlation between teen birth rate percentage of population in poverty. While these variables may not be significantly connected in some way, there is some positive relationship.
+
+```{r}
+total_dat %>% select_if(is.numeric) %>% 
+  cor %>% 
+  as.data.frame %>% 
+  rownames_to_column %>% 
+  pivot_longer(-1) %>%
+  ggplot(aes(rowname,name,fill=value))+geom_tile()+
+  geom_text(aes(label=round(value,2)), size = 2)+
+  xlab("")+
+  ylab("")+
+  theme(axis.text.x = element_text(angle=45, hjust=1))
+```
+
+```{r}
+total_dat %>% ggplot(aes(MedianHouseholdIncome, PercentPopinPoverty,
+                         color=birth_rate_level)) +
+  geom_point() + 
+  theme(legend.position=c(.8,.75)) + 
+  scale_color_brewer(palette = "Accent") +
+  ylab("Population in Poverty (%)") + 
+  xlab("Median Household Income") + 
+  labs(color="Teen Birth Rate") +
+  theme_minimal() +
+  ggtitle("Median Household Income and Population in Poverty 
+          \nby Teen Birth Rate in Texas Counties")
+```
+
+The above plot demonstrates the negative relationship between the percentage of a population in poverty and median household income across Texas counties. This makes sense that as median income increases, the number of individuals in a county living below the poverty line will decrease since it can be assumed that on average, people are earning more. The data was further organized to be colored by the "level" of teen birth rate in each county. One specific observation that can be made because of the inclusion of this variable is that a number of the counties with a *low* teen birth rate appear to be those with a higher median income. The plot below takes a closer look at this observation. 
+
+```{r}
+total_dat <- total_dat %>% 
+  mutate(population_size = case_when(population<50000 ~ "< 50,000",
+                                     50000<=population & population<=100000 ~
+                                       "50,000-100,000",
+                                     100001<=population & population<=200000 ~
+                                       "100,001-200,000",
+                                     population>200000 ~ "> 200,000"))
+total_dat$population_size <- factor(total_dat$population_size, 
+                                    levels = c("< 50,000",
+                                               "50,000-100,000",
+                                               "100,001-200,000",
+                                               "> 200,000"))
+total_dat %>% ggplot(aes(population_size,MedianHouseholdIncome,fill=birth_rate_level)) +
+  geom_bar(position="dodge",stat="summary")+
+  xlab("Population Size")+
+  ylab("Median Household Income")+
+  ggtitle("Median Household Income by Population Size and Teen Birth Rate")+
+  labs(fill="Teen Birth Rate") +
+  theme_minimal() +
+  scale_fill_brewer(palette = "Accent")
+```
+
+The above plot demonstrates the relationship between teen birth rate and median household income as a function of population size. To demonstrate this, the *population* variable was broken down into 4 levels to show that in counties across Texas of all population sizes, the lowest rates of teen pregnancy are associated with highest median household incomes. 
+
+## Dimensionality Reduction
+
+
+```{r}
+library(cluster)
+sil_width<-vector()
+for(i in 2:10){
+  pam_fit <- total_dat %>%
+    select_if(is.numeric) %>% 
+    scale %>%
+    pam(i)
+  sil_width[i] <- pam_fit$silinfo$avg.width  
+}
+ggplot()+geom_line(aes(x=1:10,y=sil_width))+
+  scale_x_continuous(name="k",breaks=1:10)
+
+```
+
+To decide on the number of clusters that should be used for running PAM with these data, the silhouette widths were created and plotted. Prior to generating the silhouette widths, the numeric variables were also selected for and scaled. As demonstrated by the plot above, the number of clusters with the highest silhouette width was 2 clusters. However, it should be noted that the highest width produces a weak structure.
+  
+```{r}
+total_dat_cluster <- total_dat %>% 
+  select_if(is.numeric) %>% 
+  scale %>%
+  pam(2)
+final <- total_dat %>% 
+  mutate(cluster=as.factor(total_dat_cluster$clustering))
+final %>% 
+  ggplot(aes(MedianHouseholdIncome,
+             PercentPopinPoverty,
+             color=cluster)) + 
+  geom_point()
+final %>% 
+  ggplot(aes(MedianHouseholdIncome,
+             TeenBirthRate,
+             color=cluster)) + 
+  geom_point()
+total_dat_cluster$silinfo$avg.width
+```
+
+The above code runs PAM using 2 clusters and saves the cluster object to *total_dat_cluster*. To visualize this clustering, I chose to create the two above plots rather than running **ggpairs** for all numeric variables due to the large number of variables in the dataset. The first plot demonstrates the relationship between median household income and the percentage of the population of each Texas county living in poverty. The colors represent the two different clusters as indicated by the legend. Cluster 1 is comprised of those data that are higher in percentage living in poverty and low in median household income. Cluster 2 is comprised mostly of those data with the opposite characteristics, however this does not entirely hold true given that some of the blue points mix into the red. A second plot was generated to examine the clustering when plotting the relationship between teen birth rate and median household income. The general trend of clustering from the previous graph holds true in this plot as well, indicating that median household income is more greatly utilized in determining the clustering of these data as compared to the other two variables. Once again however, it should be noted that, as demonstrated by the value for silhouette width generated above, the structure here is a weak one. 
