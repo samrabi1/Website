@@ -1,0 +1,40 @@
+---
+title: Python Blog
+author: Samantha Rabinowitz
+date: '2020-05-13'
+slug: python-blog
+categories: []
+tags: []
+description: ''
+---
+
+One of the most essential and useful skills that we learned this semester was the use of packages and function that allow for easy and efficient data wrangling. In R, this was achieved through use of **dplyr** functions and more recently we explored the use of **pandas** functions that accomplish the same tasks in Python. The following blog post demonstrates the functionality of both sets of functions in their respective languages using the **iris** dataset.
+
+# Select/Filter
+
+In **dplyr** in R, the *select* function can be utilized to extract desired variables from a dataset. The **pandas** equivalent of this function is *filter*. The code below demonstrates the use of these functions to extract the "Petal Length" and "Sepal Length" first in Python and then in R.
+
+```{R, include=FALSE}
+library(reticulate)
+use_python("~/Applications/Python 3.7")
+py_install("pandas")
+py_install("seaborn")
+import("pandas")
+import("seaborn")
+```
+
+```{python}
+import pandas as pd
+import seaborn as sns
+
+iris=sns.load_dataset('iris')
+iris.head()
+(iris.filter(['sepal_length','petal_length']))
+```
+
+```{R}
+library(dplyr)
+
+
+py$iris %>% select(sepal_length, petal_length)
+```
