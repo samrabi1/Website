@@ -72,247 +72,108 @@
               
 
 
-<p>One of the most essential and useful skills that we learned this semester was the use of packages and function that allow for easy and efficient data wrangling. In R, this was achieved through use of <strong>dplyr</strong> functions and more recently we explored the use of <strong>pandas</strong> functions that accomplish the same tasks in Python. The following blog post demonstrates the functionality of both sets of functions in their respective languages using the <strong>iris</strong> dataset.</p>
+<p><img src="/blog/2020-05-13-python-blog_files/iris_pic.jpeg" /></p>
+<p>One of the most essential and useful skills that we learned this semester was the use of packages and function that allow for easy and efficient data wrangling. In R, this was achieved through use of <strong>dplyr</strong> functions and more recently we explored the use of <strong>pandas</strong> functions that accomplish the same tasks in Python. The following blog post demonstrates the functionality of both sets of functions in their respective languages using the <strong>iris</strong> dataset. (See the photo above for what these flowers we’ve been coding about all semester look like - pretty, I think!)</p>
 <div id="selectfilter" class="section level1">
 <h1>Select/Filter</h1>
-<p>In <strong>dplyr</strong> in R, the <em>select</em> function can be utilized to extract desired variables from a dataset. The <strong>pandas</strong> equivalent of this function is <em>filter</em>. The code below demonstrates the use of these functions to extract the “Petal Length” and “Sepal Length” first in Python and then in R.</p>
+<p>In <strong>dplyr</strong> in R, the <em>select</em> function can be utilized to extract desired variables from a dataset. The <strong>pandas</strong> equivalent of this function is <em>filter</em>. The code below demonstrates the use of these functions to extract the “Petal Length” and “Sepal Length” columns first in Python and then in R.</p>
 <pre class="python"><code>import pandas as pd
 import seaborn as sns
 
 iris=sns.load_dataset(&#39;iris&#39;)
-iris.head()</code></pre>
+
+(iris.filter([&#39;sepal_length&#39;,&#39;petal_length&#39;]).head())</code></pre>
+<pre><code>##    sepal_length  petal_length
+## 0           5.1           1.4
+## 1           4.9           1.4
+## 2           4.7           1.3
+## 3           4.6           1.5
+## 4           5.0           1.4</code></pre>
+<pre class="r"><code>py$iris %&gt;% select(sepal_length, petal_length) %&gt;% head()</code></pre>
+<pre><code>##   sepal_length petal_length
+## 1          5.1          1.4
+## 2          4.9          1.4
+## 3          4.7          1.3
+## 4          4.6          1.5
+## 5          5.0          1.4
+## 6          5.4          1.7</code></pre>
+</div>
+<div id="filterquery" class="section level1">
+<h1>Filter/Query</h1>
+<p>In <strong>dplyr</strong> in R, the <em>filter</em> function can be utilized to pull specific rows that match a provided set of parameters from a dataset. The <strong>pandas</strong> equivalent of this function is <em>query</em>. The code below demonstrates the use of these functions to extract all rows for the species “Setosa” first in Python and then in R.</p>
+<pre class="python"><code>(iris.query(&#39;species ==&quot;setosa&quot;&#39;).head())</code></pre>
 <pre><code>##    sepal_length  sepal_width  petal_length  petal_width species
 ## 0           5.1          3.5           1.4          0.2  setosa
 ## 1           4.9          3.0           1.4          0.2  setosa
 ## 2           4.7          3.2           1.3          0.2  setosa
 ## 3           4.6          3.1           1.5          0.2  setosa
 ## 4           5.0          3.6           1.4          0.2  setosa</code></pre>
-<pre class="python"><code>(iris.filter([&#39;sepal_length&#39;,&#39;petal_length&#39;]))</code></pre>
-<pre><code>##      sepal_length  petal_length
-## 0             5.1           1.4
-## 1             4.9           1.4
-## 2             4.7           1.3
-## 3             4.6           1.5
-## 4             5.0           1.4
-## 5             5.4           1.7
-## 6             4.6           1.4
-## 7             5.0           1.5
-## 8             4.4           1.4
-## 9             4.9           1.5
-## 10            5.4           1.5
-## 11            4.8           1.6
-## 12            4.8           1.4
-## 13            4.3           1.1
-## 14            5.8           1.2
-## 15            5.7           1.5
-## 16            5.4           1.3
-## 17            5.1           1.4
-## 18            5.7           1.7
-## 19            5.1           1.5
-## 20            5.4           1.7
-## 21            5.1           1.5
-## 22            4.6           1.0
-## 23            5.1           1.7
-## 24            4.8           1.9
-## 25            5.0           1.6
-## 26            5.0           1.6
-## 27            5.2           1.5
-## 28            5.2           1.4
-## 29            4.7           1.6
-## ..            ...           ...
-## 120           6.9           5.7
-## 121           5.6           4.9
-## 122           7.7           6.7
-## 123           6.3           4.9
-## 124           6.7           5.7
-## 125           7.2           6.0
-## 126           6.2           4.8
-## 127           6.1           4.9
-## 128           6.4           5.6
-## 129           7.2           5.8
-## 130           7.4           6.1
-## 131           7.9           6.4
-## 132           6.4           5.6
-## 133           6.3           5.1
-## 134           6.1           5.6
-## 135           7.7           6.1
-## 136           6.3           5.6
-## 137           6.4           5.5
-## 138           6.0           4.8
-## 139           6.9           5.4
-## 140           6.7           5.6
-## 141           6.9           5.1
-## 142           5.8           5.1
-## 143           6.8           5.9
-## 144           6.7           5.7
-## 145           6.7           5.2
-## 146           6.3           5.0
-## 147           6.5           5.2
-## 148           6.2           5.4
-## 149           5.9           5.1
-## 
-## [150 rows x 2 columns]</code></pre>
-<pre class="r"><code>library(dplyr)</code></pre>
-<pre><code>## 
-## Attaching package: &#39;dplyr&#39;</code></pre>
-<pre><code>## The following objects are masked from &#39;package:stats&#39;:
-## 
-##     filter, lag</code></pre>
-<pre><code>## The following objects are masked from &#39;package:base&#39;:
-## 
-##     intersect, setdiff, setequal, union</code></pre>
-<pre class="r"><code>py$iris %&gt;% select(sepal_length, petal_length)</code></pre>
-<pre><code>##     sepal_length petal_length
-## 1            5.1          1.4
-## 2            4.9          1.4
-## 3            4.7          1.3
-## 4            4.6          1.5
-## 5            5.0          1.4
-## 6            5.4          1.7
-## 7            4.6          1.4
-## 8            5.0          1.5
-## 9            4.4          1.4
-## 10           4.9          1.5
-## 11           5.4          1.5
-## 12           4.8          1.6
-## 13           4.8          1.4
-## 14           4.3          1.1
-## 15           5.8          1.2
-## 16           5.7          1.5
-## 17           5.4          1.3
-## 18           5.1          1.4
-## 19           5.7          1.7
-## 20           5.1          1.5
-## 21           5.4          1.7
-## 22           5.1          1.5
-## 23           4.6          1.0
-## 24           5.1          1.7
-## 25           4.8          1.9
-## 26           5.0          1.6
-## 27           5.0          1.6
-## 28           5.2          1.5
-## 29           5.2          1.4
-## 30           4.7          1.6
-## 31           4.8          1.6
-## 32           5.4          1.5
-## 33           5.2          1.5
-## 34           5.5          1.4
-## 35           4.9          1.5
-## 36           5.0          1.2
-## 37           5.5          1.3
-## 38           4.9          1.4
-## 39           4.4          1.3
-## 40           5.1          1.5
-## 41           5.0          1.3
-## 42           4.5          1.3
-## 43           4.4          1.3
-## 44           5.0          1.6
-## 45           5.1          1.9
-## 46           4.8          1.4
-## 47           5.1          1.6
-## 48           4.6          1.4
-## 49           5.3          1.5
-## 50           5.0          1.4
-## 51           7.0          4.7
-## 52           6.4          4.5
-## 53           6.9          4.9
-## 54           5.5          4.0
-## 55           6.5          4.6
-## 56           5.7          4.5
-## 57           6.3          4.7
-## 58           4.9          3.3
-## 59           6.6          4.6
-## 60           5.2          3.9
-## 61           5.0          3.5
-## 62           5.9          4.2
-## 63           6.0          4.0
-## 64           6.1          4.7
-## 65           5.6          3.6
-## 66           6.7          4.4
-## 67           5.6          4.5
-## 68           5.8          4.1
-## 69           6.2          4.5
-## 70           5.6          3.9
-## 71           5.9          4.8
-## 72           6.1          4.0
-## 73           6.3          4.9
-## 74           6.1          4.7
-## 75           6.4          4.3
-## 76           6.6          4.4
-## 77           6.8          4.8
-## 78           6.7          5.0
-## 79           6.0          4.5
-## 80           5.7          3.5
-## 81           5.5          3.8
-## 82           5.5          3.7
-## 83           5.8          3.9
-## 84           6.0          5.1
-## 85           5.4          4.5
-## 86           6.0          4.5
-## 87           6.7          4.7
-## 88           6.3          4.4
-## 89           5.6          4.1
-## 90           5.5          4.0
-## 91           5.5          4.4
-## 92           6.1          4.6
-## 93           5.8          4.0
-## 94           5.0          3.3
-## 95           5.6          4.2
-## 96           5.7          4.2
-## 97           5.7          4.2
-## 98           6.2          4.3
-## 99           5.1          3.0
-## 100          5.7          4.1
-## 101          6.3          6.0
-## 102          5.8          5.1
-## 103          7.1          5.9
-## 104          6.3          5.6
-## 105          6.5          5.8
-## 106          7.6          6.6
-## 107          4.9          4.5
-## 108          7.3          6.3
-## 109          6.7          5.8
-## 110          7.2          6.1
-## 111          6.5          5.1
-## 112          6.4          5.3
-## 113          6.8          5.5
-## 114          5.7          5.0
-## 115          5.8          5.1
-## 116          6.4          5.3
-## 117          6.5          5.5
-## 118          7.7          6.7
-## 119          7.7          6.9
-## 120          6.0          5.0
-## 121          6.9          5.7
-## 122          5.6          4.9
-## 123          7.7          6.7
-## 124          6.3          4.9
-## 125          6.7          5.7
-## 126          7.2          6.0
-## 127          6.2          4.8
-## 128          6.1          4.9
-## 129          6.4          5.6
-## 130          7.2          5.8
-## 131          7.4          6.1
-## 132          7.9          6.4
-## 133          6.4          5.6
-## 134          6.3          5.1
-## 135          6.1          5.6
-## 136          7.7          6.1
-## 137          6.3          5.6
-## 138          6.4          5.5
-## 139          6.0          4.8
-## 140          6.9          5.4
-## 141          6.7          5.6
-## 142          6.9          5.1
-## 143          5.8          5.1
-## 144          6.8          5.9
-## 145          6.7          5.7
-## 146          6.7          5.2
-## 147          6.3          5.0
-## 148          6.5          5.2
-## 149          6.2          5.4
-## 150          5.9          5.1</code></pre>
+<pre class="r"><code>py$iris %&gt;% filter(species == &quot;setosa&quot;) %&gt;% head()</code></pre>
+<pre><code>##   sepal_length sepal_width petal_length petal_width species
+## 1          5.1         3.5          1.4         0.2  setosa
+## 2          4.9         3.0          1.4         0.2  setosa
+## 3          4.7         3.2          1.3         0.2  setosa
+## 4          4.6         3.1          1.5         0.2  setosa
+## 5          5.0         3.6          1.4         0.2  setosa
+## 6          5.4         3.9          1.7         0.4  setosa</code></pre>
+</div>
+<div id="arrangesort_values" class="section level1">
+<h1>Arrange/Sort_Values</h1>
+<p><em>Arrange</em> and <em>sort_values</em>, in <strong>dplyr</strong> and <strong>pandas</strong>, respectively, will change the order of the observations so that they are listed in ascending order by default or descending order, if specified in the function. The code below demonstrates the use of these functions to arrange the data by descending “sepal width” first in Python and then in R.</p>
+<pre class="python"><code>iris.sort_values(&quot;sepal_width&quot;, ascending=False).head()</code></pre>
+<pre><code>##     sepal_length  sepal_width  petal_length  petal_width species
+## 15           5.7          4.4           1.5          0.4  setosa
+## 33           5.5          4.2           1.4          0.2  setosa
+## 32           5.2          4.1           1.5          0.1  setosa
+## 14           5.8          4.0           1.2          0.2  setosa
+## 16           5.4          3.9           1.3          0.4  setosa</code></pre>
+<pre class="r"><code>py$iris %&gt;% arrange(desc(sepal_width)) %&gt;% head()</code></pre>
+<pre><code>##   sepal_length sepal_width petal_length petal_width species
+## 1          5.7         4.4          1.5         0.4  setosa
+## 2          5.5         4.2          1.4         0.2  setosa
+## 3          5.2         4.1          1.5         0.1  setosa
+## 4          5.8         4.0          1.2         0.2  setosa
+## 5          5.4         3.9          1.7         0.4  setosa
+## 6          5.4         3.9          1.3         0.4  setosa</code></pre>
+</div>
+<div id="summarizeagg" class="section level1">
+<h1>Summarize/Agg</h1>
+<p>In <strong>dplyr</strong>, the <em>summarize</em> function is used to generate described summary statistics for the variables defined by the user. The <strong>pandas</strong> equivalent of this function is <em>agg</em>. The code below demonstrates the use of these functions to calculate the mean and standard deviation for each of the numeric variables first in Python and then in R. [Note: the <em>select</em> function was used to drop the “species” variable in the R version of the code as <strong>dplyr</strong> will not automatically generate the defined statistics for only the numeric variables like in <strong>pandas</strong>.]</p>
+<pre class="python"><code>iris.agg([&#39;mean&#39;,&#39;std&#39;])</code></pre>
+<pre><code>##       sepal_length  sepal_width  petal_length  petal_width
+## mean      5.843333     3.057333      3.758000     1.199333
+## std       0.828066     0.435866      1.765298     0.762238</code></pre>
+<pre class="r"><code>py$iris %&gt;% select(-species) %&gt;% summarize_all(list(mean=mean,sd=sd))</code></pre>
+<pre><code>##   sepal_length_mean sepal_width_mean petal_length_mean petal_width_mean
+## 1          5.843333         3.057333             3.758         1.199333
+##   sepal_length_sd sepal_width_sd petal_length_sd petal_width_sd
+## 1       0.8280661      0.4358663        1.765298      0.7622377</code></pre>
+</div>
+<div id="mutateassign" class="section level1">
+<h1>Mutate/Assign</h1>
+<p>Finally, in <strong>dplyr</strong>, the <em>mutate</em> function serves to generate new variables in an existing dataset as defined by the user and the <strong>pandas</strong> equvalent of this function is <em>assign</em>. The code below demonstrates the use of these functions to calculate the “petal area” as defined by multiplying “petal width” by “petal width” for each observation in the dataset first in Python and then in R. [Note: the <em>select</em> and <em>filter</em> functions were also used to extract the petal width, length, and area variables from the dataset after assigning this new variable.]</p>
+<pre class="python"><code>(iris.
+assign(petal_area=iris[&#39;petal_width&#39;] * iris[&#39;petal_length&#39;]).
+filter([&#39;petal_width&#39;,&#39;petal_length&#39;, &#39;petal_area&#39;]).
+head())</code></pre>
+<pre><code>##    petal_width  petal_length  petal_area
+## 0          0.2           1.4        0.28
+## 1          0.2           1.4        0.28
+## 2          0.2           1.3        0.26
+## 3          0.2           1.5        0.30
+## 4          0.2           1.4        0.28</code></pre>
+<pre class="r"><code>py$iris %&gt;% 
+  mutate(petal_area=petal_width*petal_length) %&gt;% 
+  select(petal_area,petal_width,petal_length) %&gt;% 
+  head()</code></pre>
+<pre><code>##   petal_area petal_width petal_length
+## 1       0.28         0.2          1.4
+## 2       0.28         0.2          1.4
+## 3       0.26         0.2          1.3
+## 4       0.30         0.2          1.5
+## 5       0.28         0.2          1.4
+## 6       0.68         0.4          1.7</code></pre>
+<p>Thanks for reading!</p>
 </div>
 
               <hr>

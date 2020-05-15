@@ -8,11 +8,13 @@ tags: []
 description: ''
 ---
 
-One of the most essential and useful skills that we learned this semester was the use of packages and function that allow for easy and efficient data wrangling. In R, this was achieved through use of **dplyr** functions and more recently we explored the use of **pandas** functions that accomplish the same tasks in Python. The following blog post demonstrates the functionality of both sets of functions in their respective languages using the **iris** dataset.
+![](/blog/2020-05-13-python-blog_files/iris_pic.jpeg)
+
+One of the most essential and useful skills that we learned this semester was the use of packages and function that allow for easy and efficient data wrangling. In R, this was achieved through use of **dplyr** functions and more recently we explored the use of **pandas** functions that accomplish the same tasks in Python. The following blog post demonstrates the functionality of both sets of functions in their respective languages using the **iris** dataset. (See the photo above for what these flowers we've been coding about all semester look like - pretty, I think!)
 
 # Select/Filter
 
-In **dplyr** in R, the *select* function can be utilized to extract desired variables from a dataset. The **pandas** equivalent of this function is *filter*. The code below demonstrates the use of these functions to extract the "Petal Length" and "Sepal Length" first in Python and then in R.
+In **dplyr** in R, the *select* function can be utilized to extract desired variables from a dataset. The **pandas** equivalent of this function is *filter*. The code below demonstrates the use of these functions to extract the "Petal Length" and "Sepal Length" columns first in Python and then in R.
 
 ```{R, include=FALSE}
 library(reticulate)
@@ -28,13 +30,70 @@ import pandas as pd
 import seaborn as sns
 
 iris=sns.load_dataset('iris')
-iris.head()
-(iris.filter(['sepal_length','petal_length']))
+
+(iris.filter(['sepal_length','petal_length']).head())
+```
+
+```{R, include=FALSE}
+library(dplyr)
 ```
 
 ```{R}
-library(dplyr)
-
-
-py$iris %>% select(sepal_length, petal_length)
+py$iris %>% select(sepal_length, petal_length) %>% head()
 ```
+
+# Filter/Query
+
+In **dplyr** in R, the *filter* function can be utilized to pull specific rows that match a provided set of parameters from a dataset. The **pandas** equivalent of this function is *query*. The code below demonstrates the use of these functions to extract all rows for the species "Setosa" first in Python and then in R.
+
+```{python}
+(iris.query('species =="setosa"').head())
+```
+
+```{R}
+py$iris %>% filter(species == "setosa") %>% head()
+```
+
+# Arrange/Sort_Values
+
+*Arrange* and *sort_values*, in **dplyr** and **pandas**, respectively, will change the order of the observations so that they are listed in ascending order by default or descending order, if specified in the function. The code below demonstrates the use of these functions to arrange the data by descending "sepal width" first in Python and then in R. 
+
+```{python}
+iris.sort_values("sepal_width", ascending=False).head()
+```
+
+```{R}
+py$iris %>% arrange(desc(sepal_width)) %>% head()
+```
+
+# Summarize/Agg
+
+In **dplyr**, the *summarize* function is used to generate described summary statistics for the variables defined by the user. The **pandas** equivalent of this function is *agg*. The code below demonstrates the use of these functions to calculate the mean and standard deviation for each of the numeric variables first in Python and then in R. [Note: the *select* function was used to drop the "species" variable in the R version of the code as **dplyr** will not automatically generate the defined statistics for only the numeric variables like in **pandas**.]
+
+```{python}
+iris.agg(['mean','std'])
+```
+
+```{R}
+py$iris %>% select(-species) %>% summarize_all(list(mean=mean,sd=sd))
+```
+
+# Mutate/Assign
+
+Finally, in **dplyr**, the *mutate* function serves to generate new variables in an existing dataset as defined by the user and the **pandas** equvalent of this function is *assign*. The code below demonstrates the use of these functions to calculate the "petal area" as defined by multiplying "petal width" by "petal width" for each observation in the dataset first in Python and then in R. [Note: the *select* and *filter* functions were also used to extract the petal width, length, and area variables from the dataset after assigning this new variable.]
+
+```{python}
+(iris.
+assign(petal_area=iris['petal_width'] * iris['petal_length']).
+filter(['petal_width','petal_length', 'petal_area']).
+head())
+```
+
+```{R}
+py$iris %>% 
+  mutate(petal_area=petal_width*petal_length) %>% 
+  select(petal_area,petal_width,petal_length) %>% 
+  head()
+```
+
+Thanks for reading! 
