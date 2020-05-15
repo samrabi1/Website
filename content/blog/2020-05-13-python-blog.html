@@ -11,7 +11,7 @@ description: ''
 
 
 <p><img src="/blog/2020-05-13-python-blog_files/iris_pic.jpeg" /></p>
-<p>One of the most essential and useful skills that we learned this semester was the use of packages and function that allow for easy and efficient data wrangling. In R, this was achieved through use of <strong>dplyr</strong> functions and more recently we explored the use of <strong>pandas</strong> functions that accomplish the same tasks in Python. The following blog post demonstrates the functionality of both sets of functions in their respective languages using the <strong>iris</strong> dataset. (See the photo above for what these flowers we’ve been coding about all semester look like - pretty, I think!)</p>
+<p>One of the most essential and useful skills that we learned this semester was the use of packages and functions that allow for easy and efficient data wrangling. In R, this was achieved through use of <strong>dplyr</strong> functions and more recently we explored the use of <strong>pandas</strong> functions that accomplish the same tasks in Python. The following blog post demonstrates the functionality of both sets of functions in their respective languages using the <strong>iris</strong> dataset. (See the photo above for what these flowers we’ve been coding about all semester look like - pretty, I think!)</p>
 <div id="selectfilter" class="section level1">
 <h1>Select/Filter</h1>
 <p>In <strong>dplyr</strong> in R, the <em>select</em> function can be utilized to extract desired variables from a dataset. The <strong>pandas</strong> equivalent of this function is <em>filter</em>. The code below demonstrates the use of these functions to extract the “Petal Length” and “Sepal Length” columns first in Python and then in R.</p>
@@ -81,7 +81,9 @@ iris=sns.load_dataset(&#39;iris&#39;)
 <pre><code>##       sepal_length  sepal_width  petal_length  petal_width
 ## mean      5.843333     3.057333      3.758000     1.199333
 ## std       0.828066     0.435866      1.765298     0.762238</code></pre>
-<pre class="r"><code>py$iris %&gt;% select(-species) %&gt;% summarize_all(list(mean=mean,sd=sd))</code></pre>
+<pre class="r"><code>py$iris %&gt;% 
+  select(-species) %&gt;% 
+  summarize_all(list(mean=mean,sd=sd))</code></pre>
 <pre><code>##   sepal_length_mean sepal_width_mean petal_length_mean petal_width_mean
 ## 1          5.843333         3.057333             3.758         1.199333
 ##   sepal_length_sd sepal_width_sd petal_length_sd petal_width_sd
@@ -89,7 +91,7 @@ iris=sns.load_dataset(&#39;iris&#39;)
 </div>
 <div id="mutateassign" class="section level1">
 <h1>Mutate/Assign</h1>
-<p>Finally, in <strong>dplyr</strong>, the <em>mutate</em> function serves to generate new variables in an existing dataset as defined by the user and the <strong>pandas</strong> equvalent of this function is <em>assign</em>. The code below demonstrates the use of these functions to calculate the “petal area” as defined by multiplying “petal width” by “petal width” for each observation in the dataset first in Python and then in R. [Note: the <em>select</em> and <em>filter</em> functions were also used to extract the petal width, length, and area variables from the dataset after assigning this new variable.]</p>
+<p>Finally, in <strong>dplyr</strong>, the <em>mutate</em> function serves to generate new variables in an existing dataset as defined by the user and the <strong>pandas</strong> equvalent of this function is <em>assign</em>. The code below demonstrates the use of these functions to calculate the “petal area” as defined by multiplying “petal width” by “petal length” for each observation in the dataset first in Python and then in R. [Note: the <em>select</em> and <em>filter</em> functions were also used to extract the petal width, length, and area variables from the dataset after assigning this new variable.]</p>
 <pre class="python"><code>(iris.
 assign(petal_area=iris[&#39;petal_width&#39;] * iris[&#39;petal_length&#39;]).
 filter([&#39;petal_width&#39;,&#39;petal_length&#39;, &#39;petal_area&#39;]).

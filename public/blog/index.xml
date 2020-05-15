@@ -17,7 +17,7 @@
       <pubDate>Wed, 13 May 2020 00:00:00 +0000</pubDate>
       
       <guid>/blog/python-blog/</guid>
-      <description>One of the most essential and useful skills that we learned this semester was the use of packages and function that allow for easy and efficient data wrangling. In R, this was achieved through use of dplyr functions and more recently we explored the use of pandas functions that accomplish the same tasks in Python. The following blog post demonstrates the functionality of both sets of functions in their respective languages using the iris dataset.</description>
+      <description>One of the most essential and useful skills that we learned this semester was the use of packages and functions that allow for easy and efficient data wrangling. In R, this was achieved through use of dplyr functions and more recently we explored the use of pandas functions that accomplish the same tasks in Python. The following blog post demonstrates the functionality of both sets of functions in their respective languages using the iris dataset.</description>
     </item>
     
   </channel>
